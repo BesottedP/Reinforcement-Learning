@@ -3,8 +3,8 @@ import numpy as np
 from gymnasium import spaces
 import random as rand
 
-GAME_SIZE = 10
-NUM_MINES = 10
+GAME_SIZE = 24
+NUM_MINES = 100
 
 class MinesweeperEnv(gym.Env):
     """Custom Environment that follows gym interface."""
@@ -18,13 +18,13 @@ class MinesweeperEnv(gym.Env):
         # Example when using discrete actions:
         self.action_space = spaces.MultiDiscrete([GAME_SIZE, GAME_SIZE])
         # Example for using image as input (channel-first; channel-last also works):
-        self.observation_space = spaces.Box(low=-500, high=500, shape=(GAME_SIZE^2,), dtype=np.float64)
+        self.observation_space = spaces.Box(low=-500, high=500, shape=((GAME_SIZE*GAME_SIZE),), dtype=np.float64)
 
     def place_mines(self, board, start_row, start_col):
         num_bombs = 0
         while num_bombs != NUM_MINES:
-            rand_row = rand.randint(0,9)
-            rand_col = rand.randint(0,9)
+            rand_row = rand.randint(0,GAME_SIZE-1)
+            rand_col = rand.randint(0,GAME_SIZE-1)
             if(rand_row >= start_row -1 and rand_row <= start_row + 1 and
             rand_col >= start_col -1 and rand_col <= start_col + 1):
                 continue
@@ -84,8 +84,9 @@ class MinesweeperEnv(gym.Env):
         if(self.num_tiles_left == 0):
             print("You win!")
             print(self.player_board)
-            return 200, True
-        return 90-self.num_tiles_left, False
+            return 1000, True
+        # print(self.player_board)
+        return 476-self.num_tiles_left, False
         
 
     def step(self, action):
@@ -103,7 +104,7 @@ class MinesweeperEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         self.first_move = True
-        self.num_tiles_left = GAME_SIZE^2 - NUM_MINES
+        self.num_tiles_left = (GAME_SIZE*GAME_SIZE) - NUM_MINES
         self.master_board = np.zeros((GAME_SIZE, GAME_SIZE))
         self.player_board = np.full((GAME_SIZE, GAME_SIZE), -5)
 
