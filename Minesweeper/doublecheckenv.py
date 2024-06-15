@@ -1,7 +1,5 @@
 from minesweeperenv import MinesweeperEnv
-
-
-env = MinesweeperEnv()
+env = MinesweeperEnv(render_mode=None)
 episodes = 1000
 
 for episode in range(episodes):

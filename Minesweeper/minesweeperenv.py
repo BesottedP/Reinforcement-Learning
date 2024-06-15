@@ -2,16 +2,18 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 import random as rand
+import pygame 
+import time
 
-GAME_SIZE = 24
-NUM_MINES = 100
+GAME_SIZE = 10
+NUM_MINES = 10
 
 class MinesweeperEnv(gym.Env):
     """Custom Environment that follows gym interface."""
 
     metadata = {"render_modes": ["human"], "render_fps": 30}
 
-    def __init__(self):
+    def __init__(self, render_mode, size = 10):
         super().__init__()
         # Define action and observation space
         # They must be gym.spaces objects
@@ -19,6 +21,17 @@ class MinesweeperEnv(gym.Env):
         self.action_space = spaces.MultiDiscrete([GAME_SIZE, GAME_SIZE])
         # Example for using image as input (channel-first; channel-last also works):
         self.observation_space = spaces.Box(low=-500, high=500, shape=((GAME_SIZE*GAME_SIZE),), dtype=np.float64)
+
+        self.size = size  # The size of the square grid
+        self.window_size = 800  # The size of the PyGame window
+
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.render_mode = render_mode
+
+        pygame.font.init()
+        self.text_font = pygame.font.SysFont(None, 30)
+        self.window = None
+        self.clock = None
 
     def place_mines(self, board, start_row, start_col):
         num_bombs = 0
@@ -65,6 +78,8 @@ class MinesweeperEnv(gym.Env):
                             self.reveal_empty_tiles(self.master_board, self.player_board, check_row, check_col)
 
     def make_move(self, master_board, player_board, row, col):
+        if self.render_mode == "human":
+            self.render()
         if(self.first_move == True):
             master_board[row, col] = -2
             self.place_mines(master_board, row, col)
@@ -85,8 +100,8 @@ class MinesweeperEnv(gym.Env):
             print("You win!")
             print(self.player_board)
             return 1000, True
-        # print(self.player_board)
-        return 476-self.num_tiles_left, False
+        reward = (((GAME_SIZE*GAME_SIZE)-NUM_MINES)-self.num_tiles_left) - self.prev_reward
+        return reward, False
         
 
     def step(self, action):
@@ -94,6 +109,7 @@ class MinesweeperEnv(gym.Env):
         row = action[0]
         col = action[1]
         self.reward, self.terminated = self.make_move(self.master_board, self.player_board, row, col)
+        self.prev_reward = self.reward
 
         board = np.array(self.player_board)
         observation = board.flatten()
@@ -113,9 +129,69 @@ class MinesweeperEnv(gym.Env):
 
         return observation, {}
 
+    def draw_text(self, text, font, text_col, x, y):
+        img = font.render(text, True, text_col)
+        self.window.blit(img, (x, y))
+        
     def render(self):
-        ...
+        if self.window is None and self.render_mode == "human":
+            pygame.init()
+            pygame.display.init()
+            self.window = pygame.display.set_mode(
+                (self.window_size, self.window_size)
+            )
+        if self.clock is None and self.render_mode == "human":
+            self.clock = pygame.time.Clock()
+
+        canvas = pygame.Surface((self.window_size, self.window_size))
+        canvas.fill((255, 255, 255))
+        pix_square_size = (
+            self.window_size / self.size
+        )  # The size of a single grid square in pixels
+
+        for x in range(self.size + 1):
+            pygame.draw.line(
+                canvas,
+                0,
+                (0, pix_square_size * x),
+                (self.window_size, pix_square_size * x),
+                width=3,
+            )
+            pygame.draw.line(
+                canvas,
+                0,
+                (pix_square_size * x, 0),
+                (pix_square_size * x, self.window_size),
+                width=3,
+            )
+
+        self.window.blit(canvas, canvas.get_rect())
+        
+        for x in range(10):
+            for y in range(10):
+                color = (0, 0, 0)
+                if(self.player_board[x][y] != -5):
+                    match self.player_board[x][y]:
+                        case 0: color = (255, 255, 255)
+                        case 1: color = (0, 0, 255)
+                        case 2: color = (0, 255, 0)
+                        case 3: color = (255, 0, 0)
+                        case 4: color = (93, 63, 211)
+                        case 5: color = (255, 165, 0)
+                        case 6: color = (0, 255, 255)
+                        case 7: color = (0, 0, 0)
+                        case 8: color = (169, 169, 169)
+
+                    self.draw_text(str(self.player_board[x][y]), self.text_font, color, (x*80)+30, (y*80)+30)
+
+        pygame.event.pump()
+        pygame.display.update()
+
+        self.clock.tick(self.metadata["render_fps"])
+        time.sleep(1)
 
     def close(self):
-        ...
+        if self.window is not None:
+            pygame.display.quit()
+            pygame.quit()
 
