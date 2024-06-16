@@ -97,8 +97,8 @@ class MinesweeperEnv(gym.Env):
             return -50, True
         self.reveal_empty_tiles(self.master_board, self.player_board, row, col)
         if(self.num_tiles_left == 0):
-            print("You win!")
-            print(self.player_board)
+            # print("You win!")
+            # print(self.player_board)
             return 1000, True
         reward = (((GAME_SIZE*GAME_SIZE)-NUM_MINES)-self.num_tiles_left) - self.prev_reward
         return reward, False
