@@ -1,4 +1,3 @@
-import gym
 from stable_baselines3 import A2C, PPO
 from customEnv import CustomEnv
 import os
@@ -6,8 +5,8 @@ import time
 
 model_type = "PPO"
 
-models_dir = f"models/{model_type}-{int(time.time())}"
-logdir = f"logs/{model_type}-{int(time.time())}"
+models_dir = f"CustomEnvTest/models/{model_type}-test"
+logdir = f"CustomEnvTest/logs/{model_type}-test"
 
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)

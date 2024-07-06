@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 from stable_baselines3 import A2C, PPO
 import os
 import time

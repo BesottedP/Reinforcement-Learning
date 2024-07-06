@@ -2,7 +2,7 @@ from customEnv import CustomEnv
 
 
 env = CustomEnv()
-episodes = 50
+episodes = 100
 
 for episode in range(episodes):
 	done = False
