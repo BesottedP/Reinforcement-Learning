@@ -5,15 +5,15 @@ import random as rand
 import pygame 
 import time
 
-GAME_SIZE = 10
-NUM_MINES = 10
+GAME_SIZE = 7
+NUM_MINES = 5
 
 class MinesweeperEnv(gym.Env):
     """Custom Environment that follows gym interface."""
 
     metadata = {"render_modes": ["human"], "render_fps": 30}
 
-    def __init__(self, render_mode, size = 10):
+    def __init__(self, render_mode):
         super().__init__()
         # Define action and observation space
         # They must be gym.spaces objects
@@ -22,7 +22,7 @@ class MinesweeperEnv(gym.Env):
         # Example for using image as input (channel-first; channel-last also works):
         self.observation_space = spaces.Box(low=-500, high=500, shape=((GAME_SIZE*GAME_SIZE),), dtype=np.float64)
 
-        self.size = size  # The size of the square grid
+        self.size = GAME_SIZE  # The size of the square grid
         self.window_size = 800  # The size of the PyGame window
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -167,8 +167,8 @@ class MinesweeperEnv(gym.Env):
 
         self.window.blit(canvas, canvas.get_rect())
         
-        for x in range(10):
-            for y in range(10):
+        for x in range(GAME_SIZE):
+            for y in range(GAME_SIZE):
                 color = (0, 0, 0)
                 if(self.player_board[x][y] != -5):
                     match self.player_board[x][y]:
