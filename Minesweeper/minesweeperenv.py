@@ -5,8 +5,8 @@ import random as rand
 import pygame 
 import time
 
-GAME_SIZE = 7
-NUM_MINES = 5
+GAME_SIZE = 10
+NUM_MINES = 10
 
 class MinesweeperEnv(gym.Env):
     """Custom Environment that follows gym interface."""
@@ -20,7 +20,7 @@ class MinesweeperEnv(gym.Env):
         # Example when using discrete actions:
         self.action_space = spaces.MultiDiscrete([GAME_SIZE, GAME_SIZE])
         # Example for using image as input (channel-first; channel-last also works):
-        self.observation_space = spaces.Box(low=-500, high=500, shape=((GAME_SIZE*GAME_SIZE),), dtype=np.float64)
+        self.observation_space = spaces.Box(low=-5, high=10, shape=((GAME_SIZE*GAME_SIZE),), dtype=np.float64)
 
         self.size = GAME_SIZE  # The size of the square grid
         self.window_size = 800  # The size of the PyGame window

@@ -25,5 +25,3 @@ for i in range(1, 10):
     model.save(f"{models_dir}/{TIMESTEPS*i}")
 
 env.close()
-
-  
