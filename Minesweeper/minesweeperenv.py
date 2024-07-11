@@ -99,7 +99,7 @@ class MinesweeperEnv(gym.Env):
         if(self.num_tiles_left == 0):
             # print("You win!")
             # print(self.player_board)
-            return 1000, True
+            return 50, True
         reward = (((GAME_SIZE*GAME_SIZE)-NUM_MINES)-self.num_tiles_left) - self.prev_reward
         return reward, False
         
@@ -172,7 +172,7 @@ class MinesweeperEnv(gym.Env):
                 color = (0, 0, 0)
                 if(self.player_board[x][y] != -5):
                     match self.player_board[x][y]:
-                        case 0: color = (255, 255, 255)
+                        case 0: color = (128, 128, 128)
                         case 1: color = (0, 0, 255)
                         case 2: color = (0, 255, 0)
                         case 3: color = (255, 0, 0)
