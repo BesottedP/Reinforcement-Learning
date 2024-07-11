@@ -78,8 +78,6 @@ class MinesweeperEnv(gym.Env):
                             self.reveal_empty_tiles(self.master_board, self.player_board, check_row, check_col)
 
     def make_move(self, master_board, player_board, row, col):
-        if self.render_mode == "human":
-            self.render()
         if(self.first_move == True):
             master_board[row, col] = -2
             self.place_mines(master_board, row, col)
@@ -87,20 +85,30 @@ class MinesweeperEnv(gym.Env):
             self.reveal_empty_tiles(master_board, player_board, row, col)
             player_board[row, col] = master_board[row , col]
             self.first_move = False
-            return 0, False
+            if self.render_mode == "human":
+                self.render()
+            return (((GAME_SIZE*GAME_SIZE)-NUM_MINES)-self.num_tiles_left), False
         if(self.player_board[row][col] != -5):
+            if self.render_mode == "human":
+                self.render()
             return -1, True
         if(self.master_board[row][col] == -1):
             self.player_board[row][col] = self.master_board[row][col]
             # print("You hit a mine! Game over...")
             # print(self.player_board)
+            if self.render_mode == "human":
+                self.render()
             return -50, True
         self.reveal_empty_tiles(self.master_board, self.player_board, row, col)
         if(self.num_tiles_left == 0):
             # print("You win!")
             # print(self.player_board)
-            return 50, True
-        reward = (((GAME_SIZE*GAME_SIZE)-NUM_MINES)-self.num_tiles_left) - self.prev_reward
+            if self.render_mode == "human":
+                self.render()
+            return 50 + ((((GAME_SIZE*GAME_SIZE)-NUM_MINES)-self.num_tiles_left) - self.total_reward_granted), True
+        reward = (((GAME_SIZE*GAME_SIZE)-NUM_MINES)-self.num_tiles_left) - self.total_reward_granted
+        if self.render_mode == "human":
+                self.render()
         return reward, False
         
 
@@ -109,7 +117,7 @@ class MinesweeperEnv(gym.Env):
         row = action[0]
         col = action[1]
         self.reward, self.terminated = self.make_move(self.master_board, self.player_board, row, col)
-        self.prev_reward = self.reward
+        self.total_reward_granted += self.reward
 
         board = np.array(self.player_board)
         observation = board.flatten()
@@ -121,6 +129,7 @@ class MinesweeperEnv(gym.Env):
     def reset(self, seed=None, options=None):
         self.first_move = True
         self.num_tiles_left = (GAME_SIZE*GAME_SIZE) - NUM_MINES
+        self.total_reward_granted = 0
         self.master_board = np.zeros((GAME_SIZE, GAME_SIZE))
         self.player_board = np.full((GAME_SIZE, GAME_SIZE), -5)
 

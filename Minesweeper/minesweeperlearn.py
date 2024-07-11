@@ -6,7 +6,7 @@ import time
 
 model_type = "PPO"
 
-env = MinesweeperEnv(render_mode=None)
+env = MinesweeperEnv(render_mode="human")
 env.reset()
 
 models_dir = f"Minesweeper/models/att2"
@@ -18,7 +18,9 @@ if not os.path.exists(models_dir):
 if not os.path.exists(logdir):
     os.makedirs(logdir)
 
-model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=logdir, device="cuda", n_steps=8192, batch_size=256)
+#model = PPO("MlpPolicy", env, verbose=1, tensorboard_log=logdir, device="cuda", n_steps=8192, batch_size=256)
+model_path = f"{models_dir}/20350000.zip"
+model = PPO.load(model_path, env=env, device ="cuda")
 
 TIMESTEPS = 10000
 for i in range(1, 10000):
