@@ -1,6 +1,8 @@
 from minesweeperenv import MinesweeperEnv
-env = MinesweeperEnv(render_mode="human")
+env = MinesweeperEnv(render_mode=None)
 episodes = 1000
+
+# print(env.observation_space.sample())
 
 for episode in range(episodes):
 	done = False

@@ -5,7 +5,7 @@ import random as rand
 import pygame 
 import time
 
-GAME_SIZE = 10
+GAME_SIZE = 9
 NUM_MINES = 10
 
 class MinesweeperEnv(gym.Env):
@@ -20,7 +20,7 @@ class MinesweeperEnv(gym.Env):
         # Example when using discrete actions:
         self.action_space = spaces.MultiDiscrete([GAME_SIZE, GAME_SIZE])
         # Example for using image as input (channel-first; channel-last also works):
-        self.observation_space = spaces.Box(low=-5, high=10, shape=((GAME_SIZE*GAME_SIZE),), dtype=np.float64)
+        self.observation_space = spaces.Box(low=-1, high=8, shape=(GAME_SIZE, GAME_SIZE), dtype=np.int8)
 
         self.size = GAME_SIZE  # The size of the square grid
         self.window_size = 800  # The size of the PyGame window
@@ -62,7 +62,7 @@ class MinesweeperEnv(gym.Env):
                 if(board[row][col] != -1):
                     board[row][col] = num_adj_mines
 
-    def reveal_empty_tiles(self, master_board, player_board, row, col):
+    def reveal_empty_tiles(self, row, col):
         self.num_tiles_left
         for adj_row in range(-1,2):
                 for adj_col in range(-1,2):
@@ -71,42 +71,67 @@ class MinesweeperEnv(gym.Env):
                     if((check_col == GAME_SIZE or check_row == GAME_SIZE)
                         or (check_col == -1 or check_row == -1)):
                             continue
-                    if(self.player_board[check_row][check_col] == -5 and (self.master_board[check_row][check_col] != -1)):
+                    if(self.player_board[check_row][check_col] == -1 and (self.master_board[check_row][check_col] != -1)):
                         self.player_board[check_row][check_col] = self.master_board[check_row][check_col]
                         self.num_tiles_left -= 1
                         if(self.player_board[check_row][check_col] == 0):
-                            self.reveal_empty_tiles(self.master_board, self.player_board, check_row, check_col)
+                            self.reveal_empty_tiles(check_row, check_col)
+    
+    def made_a_guess(self, row, col):
+        for adj_row in range(-2, 2):
+            for adj_col in range(-2, 2):
+                check_row = row + adj_row
+                check_col = col + adj_col
+                if((check_col >= GAME_SIZE or check_row >= GAME_SIZE) or (check_col <= -1 or check_row <= -1)):
+                    continue
+                if(self.player_board[check_row, check_col] != -1):
+                    return False
+        return True
+
 
     def make_move(self, master_board, player_board, row, col):
+        prev_tiles_left = self.num_tiles_left
+        #On the first move, set the origin tile and place mines. Then update the masterboard to have all the mine numbers
         if(self.first_move == True):
             master_board[row, col] = -2
             self.place_mines(master_board, row, col)
             self.set_num_mines(master_board)
-            self.reveal_empty_tiles(master_board, player_board, row, col)
+            self.reveal_empty_tiles(row, col)
             player_board[row, col] = master_board[row , col]
             self.first_move = False
             if self.render_mode == "human":
                 self.render()
+                #print(f"Starting row: {row}, starting col: {col}")
             return (((GAME_SIZE*GAME_SIZE)-NUM_MINES)-self.num_tiles_left), False
-        if(self.player_board[row][col] != -5):
+        #If the player clicks on an already revealed tile, provide a negative punishment and continue the game
+        if(self.player_board[row][col] != -1):
             if self.render_mode == "human":
+                print("Invalid move! Try again.")
                 self.render()
-            return -1, True
+            return -15, False
+        #If the player hits a mine, provide a negative punishment and end the game
         if(self.master_board[row][col] == -1):
             self.player_board[row][col] = self.master_board[row][col]
-            # print("You hit a mine! Game over...")
-            # print(self.player_board)
+            if self.render_mode == "human":
+                print("You hit a mine! Game over...")
+                self.render()
+            return -100, True
+        if(self.made_a_guess(row, col) == True):
+            self.reveal_empty_tiles(row, col)
+            print("made a guess")
+            reward = -15
             if self.render_mode == "human":
                 self.render()
-            return -50, True
-        self.reveal_empty_tiles(self.master_board, self.player_board, row, col)
+            return reward, False
+        self.reveal_empty_tiles(row, col)
+        #If the player wins, end the game and reward the remaining amount of points
         if(self.num_tiles_left == 0):
-            # print("You win!")
-            # print(self.player_board)
             if self.render_mode == "human":
+                print("You win!")
                 self.render()
-            return 50 + ((((GAME_SIZE*GAME_SIZE)-NUM_MINES)-self.num_tiles_left) - self.total_reward_granted), True
-        reward = (((GAME_SIZE*GAME_SIZE)-NUM_MINES)-self.num_tiles_left) - self.total_reward_granted
+            return 100 + (prev_tiles_left - self.num_tiles_left), True
+        #Otherwise, return the current reward and continue playing
+        reward = (prev_tiles_left - self.num_tiles_left)
         if self.render_mode == "human":
                 self.render()
         return reward, False
@@ -119,8 +144,8 @@ class MinesweeperEnv(gym.Env):
         self.reward, self.terminated = self.make_move(self.master_board, self.player_board, row, col)
         self.total_reward_granted += self.reward
 
-        board = np.array(self.player_board)
-        observation = board.flatten()
+        board = np.array(self.player_board, dtype=np.int8)
+        observation = board
         observation = np.array(observation)
 
         #return observation
@@ -131,10 +156,13 @@ class MinesweeperEnv(gym.Env):
         self.num_tiles_left = (GAME_SIZE*GAME_SIZE) - NUM_MINES
         self.total_reward_granted = 0
         self.master_board = np.zeros((GAME_SIZE, GAME_SIZE))
-        self.player_board = np.full((GAME_SIZE, GAME_SIZE), -5)
+        self.player_board = np.full((GAME_SIZE, GAME_SIZE), -1)
 
-        board = np.array(self.player_board)
-        observation = board.flatten()
+        board = np.array(self.player_board, dtype=np.int8)
+        observation = board
+
+        if(self.render_mode == "human"):
+            self.render()
 
         return observation, {}
 
@@ -179,7 +207,7 @@ class MinesweeperEnv(gym.Env):
         for x in range(GAME_SIZE):
             for y in range(GAME_SIZE):
                 color = (0, 0, 0)
-                if(self.player_board[x][y] != -5):
+                if(self.player_board[x][y] != -1):
                     match self.player_board[x][y]:
                         case 0: color = (128, 128, 128)
                         case 1: color = (0, 0, 255)
@@ -191,7 +219,10 @@ class MinesweeperEnv(gym.Env):
                         case 7: color = (0, 0, 0)
                         case 8: color = (169, 169, 169)
 
-                    self.draw_text(str(self.player_board[x][y]), self.text_font, color, (x*80)+30, (y*80)+30)
+                    if(self.master_board[x][y] == -1):
+                        color = (0, 0, 0)
+
+                    self.draw_text(str(self.player_board[x][y]), self.text_font, color, (x*pix_square_size)+(pix_square_size/2), (y*pix_square_size)+(pix_square_size/2))
 
         pygame.event.pump()
         pygame.display.update()
